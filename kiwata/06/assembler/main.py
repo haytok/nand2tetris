@@ -37,7 +37,7 @@ def get_file_text(file_path):
 
 def create_hack_file(file_path, commands):
     f = open(file_path, 'w')
-    f.writelines(commands)
+    f.write('\n'.join(commands))
     f.close()
 
 
