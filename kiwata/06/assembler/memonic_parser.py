@@ -49,7 +49,7 @@ def get_address_of_c_command(input_text):
         command += comp_binary + dest_binary + '000'
         return command
     elif ';' in input_text:
-        comp_memonic, jump_memonic = input_text.split('=')
+        comp_memonic, jump_memonic = input_text.split(';')
         comp_binary = get_comp_binary(comp_memonic)
         jump_binary = get_jump_binary(jump_memonic)
         command += comp_binary + '000' + jump_binary
