@@ -1,6 +1,6 @@
 import sys
 
-from parser import get_advance
+from memonic_parser import get_advance
 
 def main():
     print(sys.argv)
