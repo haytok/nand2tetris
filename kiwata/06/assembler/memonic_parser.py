@@ -10,8 +10,30 @@ class SymbolTable:
             'R0': format(0, '016b'),
             'R1': format(1, '016b'),
             'R2': format(2, '016b'),
+            'R3': format(3, '016b'),
+            'R4': format(4, '016b'),
+            'R5': format(5, '016b'),
+            'R6': format(6, '016b'),
+            'R7': format(7, '016b'),
+            'R8': format(8, '016b'),
+            'R9': format(9, '016b'),
+            'R10': format(10, '016b'),
+            'R11': format(11, '016b'),
+            'R12': format(12, '016b'),
+            'R13': format(13, '016b'),
+            'R14': format(14, '016b'),
+            'R15': format(15, '016b'),
+            'SP': format(0, '016b'),
+            'LCL': format(1, '016b'),
+            'ARG': format(2, '016b'),
+            'THIS': format(3, '016b'),
+            'THAT': format(4, '016b'),
+            'SCREEN': format(16384, '016b'),
+            'KBD': format(24576, '016b'),
         }
-        self.SYMBOL_TABLE = {}
+        self.LABEL_SYMBOL_TABLE = {}
+        self.var_symbol_address = 16
+        self.VAR_SYMBOL_TABLE = {}
         self.command = {
             self.A_COMMAND : self.get_address_of_a_command,
             self.C_COMMAND : self.get_address_of_c_command,
@@ -23,16 +45,37 @@ class SymbolTable:
         return input_value in self.DEFINED_SYMBOL_TABLE
 
 
-    def is_symbol_table(self, input_value):
-        return input_value in self.SYMBOL_TABLE
+    def is_label_symbol_table(self, input_value):
+        return input_value in self.LABEL_SYMBOL_TABLE
 
 
-    def add_symbol_table(self, memonic, address):
-        self.SYMBOL_TABLE[memonic] = address
+    def is_var_symbol_table(self, input_value):
+        return input_value in self.VAR_SYMBOL_TABLE
 
 
-    def get_symbol_table(self):
-        return self.SYMBOL_TABLE
+    def add_var_symbol_table(self, input_value):
+        try:
+            input_value = int(input_value)
+        except:
+            if (
+                not self.is_defined_symbol_table(input_value) and
+                not self.is_label_symbol_table(input_value) and
+                not self.is_var_symbol_table(input_value)
+            ):
+                print(input_value, '='*10)
+                self.VAR_SYMBOL_TABLE[input_value] = format(
+                    self.var_symbol_address,
+                    '016b'
+                )
+                self.var_symbol_address += 1
+
+
+    def add_label_symbol_table(self, memonic, address):
+        self.LABEL_SYMBOL_TABLE[memonic] = address
+
+
+    def get_label_symbol_table(self):
+        return self.LABEL_SYMBOL_TABLE
 
 
     def get_advance(self, input_text):
@@ -61,11 +104,14 @@ class SymbolTable:
             value = format(input_value, '016b')
             return value
         except:
+            print(input_value, 'input_value')
             # @i のケース
             if self.is_defined_symbol_table(input_value):
                 return self.DEFINED_SYMBOL_TABLE[input_value]
-            elif self.is_symbol_table(input_value):
-                return self.SYMBOL_TABLE[input_value]
+            elif self.is_label_symbol_table(input_value):
+                return self.LABEL_SYMBOL_TABLE[input_value]
+            elif self.is_var_symbol_table(input_value):
+                return self.VAR_SYMBOL_TABLE[input_value]
             else:
                 raise ValueError('Input in get_address_of_a_command is invalid.')
 

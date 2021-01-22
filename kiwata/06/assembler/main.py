@@ -26,20 +26,27 @@ def main():
     )
     print('-' * 10)
     # Create Symbol Table.
-    address = 0
+    label_symbol_address = 0
     symbol_table = SymbolTable()
     for input_text in input_texts:
         command_type = symbol_table.get_command_type(input_text)
-        if command_type == symbol_table.A_COMMAND:
-            address += 1
-        elif command_type == symbol_table.L_COMMAND:
-            symbol_table.add_symbol_table(
+        if command_type == symbol_table.L_COMMAND:
+            symbol_table.add_label_symbol_table(
                 input_text[1:-1],
-                format(address, '016b')
+                format(label_symbol_address, '016b')
             )
         else:
-            address += 1
-    print(symbol_table.get_symbol_table())
+            label_symbol_address += 1
+    label_symbol_address = 0
+    for input_text in input_texts:
+        command_type = symbol_table.get_command_type(input_text)
+        if command_type == symbol_table.A_COMMAND:
+            symbol_table.add_var_symbol_table(input_text[1:])
+            label_symbol_address += 1
+        else:
+            label_symbol_address += 1
+    print('LABEL_SYMBOL_TABLE', symbol_table.LABEL_SYMBOL_TABLE)
+    print('VAR_SYMBOL_TABLE', symbol_table.VAR_SYMBOL_TABLE)
     print('-' * 10)
     # Create binary.
     for input_text in input_texts:
