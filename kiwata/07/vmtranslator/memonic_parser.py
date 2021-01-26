@@ -18,6 +18,7 @@ class Parser:
         self.command = {
             self.C_ARITHMETIC: self.get_assembly_of_arithmetic,
             self.C_PUSH: self.get_assembly_of_push,
+            self.C_POP: self.get_assembly_of_pop,
         }
         self.SEGMENT_CONSTANT = 9
         self.ARITHMETIC_COUNTER = 0
@@ -289,15 +290,26 @@ class Parser:
         return assembly
 
 
+    # push コマンド
     def get_assembly_of_push(self, splited_input_text):
         segment, value = splited_input_text[1], splited_input_text[2]
         if segment == 'constant':
-            return self.get_assembly_of_const(value)
+            return self.get_assembly_of_push_constant(value)
+        elif segment == 'local':
+            return self.get_assembly_of_push_local(value)
+        elif segment == 'that':
+            return self.get_assembly_of_push_that(value)
+        elif segment == 'argument':
+            return self.get_assembly_of_push_argument(value)
+        elif segment == 'this':
+            return self.get_assembly_of_push_this(value)
+        elif segment == 'temp':
+            return self.get_assembly_of_push_temp(value)
         else:
             raise ValueError('Invalid input text.')
 
 
-    def get_assembly_of_const(self, value):
+    def get_assembly_of_push_constant(self, value):
         assembly = [
             '@{}'.format(value),
             'D=A',
@@ -306,5 +318,245 @@ class Parser:
             'M=D',
             '@SP',
             'M=M+1',
+        ]
+        return assembly
+
+
+    def get_assembly_of_push_local(self, value):
+        SYMBOL_NAME = 'LCL'
+        assembly = [
+            '@{}'.format(value),
+            'D=A',
+            '@{}'.format(SYMBOL_NAME),
+            'M=M+D',
+            '@{}'.format(SYMBOL_NAME),
+            'A=M',
+            'D=M',
+            '@SP',
+            'A=M',
+            'M=D',
+            '@SP',
+            'M=M+1',
+            '@{}'.format(value),
+            'D=A',
+            '@{}'.format(SYMBOL_NAME),
+            'M=M-D',
+        ]
+        return assembly
+
+    def get_assembly_of_push_that(self, value):
+        SYMBOL_NAME = 'THAT'
+        assembly = [
+            '@{}'.format(value),
+            'D=A',
+            '@{}'.format(SYMBOL_NAME),
+            'M=M+D',
+            '@{}'.format(SYMBOL_NAME),
+            'A=M',
+            'D=M',
+            '@SP',
+            'A=M',
+            'M=D',
+            '@SP',
+            'M=M+1',
+            '@{}'.format(value),
+            'D=A',
+            '@{}'.format(SYMBOL_NAME),
+            'M=M-D',
+        ]
+        return assembly
+
+
+    def get_assembly_of_push_argument(self, value):
+        SYMBOL_NAME = 'ARG'
+        assembly = [
+            '@{}'.format(value),
+            'D=A',
+            '@{}'.format(SYMBOL_NAME),
+            'M=M+D',
+            '@{}'.format(SYMBOL_NAME),
+            'A=M',
+            'D=M',
+            '@SP',
+            'A=M',
+            'M=D',
+            '@SP',
+            'M=M+1',
+            '@{}'.format(value),
+            'D=A',
+            '@{}'.format(SYMBOL_NAME),
+            'M=M-D',
+        ]
+        return assembly
+
+
+    def get_assembly_of_push_this(self, value):
+        SYMBOL_NAME = 'THIS'
+        assembly = [
+            '@{}'.format(value),
+            'D=A',
+            '@{}'.format(SYMBOL_NAME),
+            'M=M+D',
+            '@{}'.format(SYMBOL_NAME),
+            'A=M',
+            'D=M',
+            '@SP',
+            'A=M',
+            'M=D',
+            '@SP',
+            'M=M+1',
+            '@{}'.format(value),
+            'D=A',
+            '@{}'.format(SYMBOL_NAME),
+            'M=M-D',
+        ]
+        return assembly
+
+
+    def get_assembly_of_push_temp(self, value):
+        SYMBOL_NAME = '5'
+        assembly = [
+            '@{}'.format(value),
+            'D=A',
+            '@{}'.format(SYMBOL_NAME),
+            'M=M+D',
+            '@{}'.format(SYMBOL_NAME),
+            'A=M',
+            'D=M',
+            '@SP',
+            'A=M',
+            'M=D',
+            '@SP',
+            'M=M+1',
+            '@{}'.format(value),
+            'D=A',
+            '@{}'.format(SYMBOL_NAME),
+            'M=M-D',
+        ]
+        return assembly
+
+
+    # pop コマンド
+    def get_assembly_of_pop(self, splited_input_text):
+        segment, value = splited_input_text[1], splited_input_text[2]
+        if segment == 'local':
+            return self.get_assembly_of_pop_local(value)
+        elif segment == 'argument':
+            return self.get_assembly_of_pop_argument(value)
+        elif segment == 'this':
+            return self.get_assembly_of_pop_this(value)
+        elif segment == 'that':
+            return self.get_assembly_of_pop_that(value)
+        elif segment == 'temp':
+            return self.get_assembly_of_pop_temp(value)
+        else:
+            raise ValueError('Invalid input text.')        
+
+
+    def get_assembly_of_pop_local(self, value):
+        SYMBOL_NAME = 'LCL'
+        assembly = [
+            '@{}'.format(value),
+            'D=A',
+            '@{}'.format(SYMBOL_NAME),
+            'M=M+D',
+            '@SP',
+            'M=M-1',
+            'A=M',
+            'D=M',
+            '@{}'.format(SYMBOL_NAME),
+            'A=M',
+            'M=D',
+            '@{}'.format(value),
+            'D=A',
+            '@{}'.format(SYMBOL_NAME),
+            'M=M-D',
+        ]
+        return assembly
+
+
+    def get_assembly_of_pop_argument(self, value):
+        SYMBOL_NAME = 'ARG'
+        assembly = [
+            '@{}'.format(value),
+            'D=A',
+            '@{}'.format(SYMBOL_NAME),
+            'M=M+D',
+            '@SP',
+            'M=M-1',
+            'A=M',
+            'D=M',
+            '@{}'.format(SYMBOL_NAME),
+            'A=M',
+            'M=D',
+            '@{}'.format(value),
+            'D=A',
+            '@{}'.format(SYMBOL_NAME),
+            'M=M-D',
+        ]
+        return assembly
+
+
+    def get_assembly_of_pop_this(self, value):
+        SYMBOL_NAME = 'THIS'
+        assembly = [
+            '@{}'.format(value),
+            'D=A',
+            '@{}'.format(SYMBOL_NAME),
+            'M=M+D',
+            '@SP',
+            'M=M-1',
+            'A=M',
+            'D=M',
+            '@{}'.format(SYMBOL_NAME),
+            'A=M',
+            'M=D',
+            '@{}'.format(value),
+            'D=A',
+            '@{}'.format(SYMBOL_NAME),
+            'M=M-D',
+        ]
+        return assembly
+
+    def get_assembly_of_pop_that(self, value):
+        SYMBOL_NAME = 'THAT'
+        assembly = [
+            '@{}'.format(value),
+            'D=A',
+            '@{}'.format(SYMBOL_NAME),
+            'M=M+D',
+            '@SP',
+            'M=M-1',
+            'A=M',
+            'D=M',
+            '@{}'.format(SYMBOL_NAME),
+            'A=M',
+            'M=D',
+            '@{}'.format(value),
+            'D=A',
+            '@{}'.format(SYMBOL_NAME),
+            'M=M-D',
+        ]
+        return assembly
+
+
+    def get_assembly_of_pop_temp(self, value):
+        SYMBOL_NAME = '5'
+        assembly = [
+            '@{}'.format(value),
+            'D=A',
+            '@{}'.format(SYMBOL_NAME),
+            'M=M+D',
+            '@SP',
+            'M=M-1',
+            'A=M',
+            'D=M',
+            '@{}'.format(SYMBOL_NAME),
+            'A=M',
+            'M=D',
+            '@{}'.format(value),
+            'D=A',
+            '@{}'.format(SYMBOL_NAME),
+            'M=M-D',
         ]
         return assembly
