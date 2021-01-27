@@ -305,6 +305,8 @@ class Parser:
             return self.get_assembly_of_push_this(value)
         elif segment == 'temp':
             return self.get_assembly_of_push_temp(value)
+        elif segment == 'pointer':
+            return self.get_assembly_of_push_pointer(value)
         else:
             raise ValueError('Invalid input text.')
 
@@ -436,6 +438,21 @@ class Parser:
         return assembly
 
 
+    def get_assembly_of_push_pointer(self, value):
+        print(value, value == '1')
+        SYMBOL_NAME = 'THIS' if value == '0' else 'THAT'
+        print(SYMBOL_NAME)
+        assembly = [
+            '@{}'.format(SYMBOL_NAME),
+            'D=M',
+            '@SP',
+            'A=M',
+            'M=D',
+            '@SP',
+            'M=M+1',
+        ]
+        return assembly
+
     # pop コマンド
     def get_assembly_of_pop(self, splited_input_text):
         segment, value = splited_input_text[1], splited_input_text[2]
@@ -449,6 +466,8 @@ class Parser:
             return self.get_assembly_of_pop_that(value)
         elif segment == 'temp':
             return self.get_assembly_of_pop_temp(value)
+        elif segment == 'pointer':
+            return self.get_assembly_of_pop_pointer(value)
         else:
             raise ValueError('Invalid input text.')        
 
@@ -558,5 +577,18 @@ class Parser:
             'D=A',
             '@{}'.format(SYMBOL_NAME),
             'M=M-D',
+        ]
+        return assembly
+
+
+    def get_assembly_of_pop_pointer(self, value):
+        SYMBOL_NAME = 'THIS' if value == '0' else 'THAT'
+        assembly = [
+            '@SP',
+            'M=M-1',
+            'A=M',
+            'D=M',
+            '@{}'.format(SYMBOL_NAME),
+            'M=D',
         ]
         return assembly
