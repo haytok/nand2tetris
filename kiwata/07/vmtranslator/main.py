@@ -27,7 +27,7 @@ def main():
         )
     )
     # Create Assembler.
-    parser = Parser()
+    parser = Parser(input_file_name=input_file_name)
     commands = []
     for input_text in input_texts:
         command = parser.get_advance(input_text)

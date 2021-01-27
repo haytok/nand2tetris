@@ -5,7 +5,7 @@
 '''
 
 class Parser:
-    def __init__(self):
+    def __init__(self, input_file_name):
         self.C_ARITHMETIC = 0
         self.C_PUSH = 1
         self.C_POP = 2
@@ -22,6 +22,7 @@ class Parser:
         }
         self.SEGMENT_CONSTANT = 9
         self.ARITHMETIC_COUNTER = 0
+        self.FILE_NAME = input_file_name.split('.')[0]
 
 
     def get_advance(self, input_text):
@@ -307,6 +308,8 @@ class Parser:
             return self.get_assembly_of_push_temp(value)
         elif segment == 'pointer':
             return self.get_assembly_of_push_pointer(value)
+        elif segment == 'static':
+            return self.get_assembly_of_push_static(value)
         else:
             raise ValueError('Invalid input text.')
 
@@ -439,9 +442,7 @@ class Parser:
 
 
     def get_assembly_of_push_pointer(self, value):
-        print(value, value == '1')
         SYMBOL_NAME = 'THIS' if value == '0' else 'THAT'
-        print(SYMBOL_NAME)
         assembly = [
             '@{}'.format(SYMBOL_NAME),
             'D=M',
@@ -452,6 +453,21 @@ class Parser:
             'M=M+1',
         ]
         return assembly
+
+
+    def get_assembly_of_push_static(self, value):
+        assembly = [
+            '@{}.{}'.format(self.FILE_NAME, value),
+            # '@{}'.format(16 + int(value)),
+            'D=M',
+            '@SP',
+            'A=M',
+            'M=D',
+            '@SP',
+            'M=M+1',
+        ]
+        return assembly
+
 
     # pop コマンド
     def get_assembly_of_pop(self, splited_input_text):
@@ -468,6 +484,8 @@ class Parser:
             return self.get_assembly_of_pop_temp(value)
         elif segment == 'pointer':
             return self.get_assembly_of_pop_pointer(value)
+        elif segment == 'static':
+            return self.get_assembly_of_pop_static(value)
         else:
             raise ValueError('Invalid input text.')        
 
@@ -589,6 +607,19 @@ class Parser:
             'A=M',
             'D=M',
             '@{}'.format(SYMBOL_NAME),
+            'M=D',
+        ]
+        return assembly
+
+
+    def get_assembly_of_pop_static(self, value):
+        assembly = [
+            '@SP',
+            'M=M-1',
+            'A=M',
+            'D=M',
+            '@{}.{}'.format(self.FILE_NAME, value),
+            # '@{}'.format(16 + int(value)),
             'M=D',
         ]
         return assembly
