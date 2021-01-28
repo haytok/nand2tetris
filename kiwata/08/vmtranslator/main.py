@@ -1,8 +1,27 @@
 import sys
+import re
 
 from memonic_parser import (
     Parser,
 )
+
+def remove_comments(string):
+    pattern = r"(\".*?\"|\'.*?\')|(/\*.*?\*/|//[^\r\n]*$)"
+    # first group captures quoted strings (double or single)
+    # second group captures comments (//single-line or /* multi-line */)
+    regex = re.compile(pattern, re.MULTILINE|re.DOTALL)
+    def _replacer(match):
+        # if the 2nd group (capturing comments) is not None,
+        # it means we have captured a non-quoted (real) comment string.
+        if match.group(2) is not None:
+            # so we will return empty to remove the comment
+            return ''
+        # otherwise, we will return the 1st group
+        else:
+            # captured quoted-string
+            return match.group(1)
+    return regex.sub(_replacer, string).strip()
+
 
 def main():
     # Input
@@ -21,7 +40,7 @@ def main():
     replace_new_line = lambda value: value.replace('\n', '').strip()
     input_texts = list(
         map(
-            replace_new_line, filter(
+            remove_comments, filter(
                 del_new_line, filter(del_commet, input_texts)
             )
         )

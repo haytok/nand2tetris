@@ -15,12 +15,14 @@ class Parser:
         self.C_FUNCTION = 6
         self.C_RETURN = 7
         self.C_CALL = 8
+        self.SEGMENT_CONSTANT = 9
         self.command = {
             self.C_ARITHMETIC: self.get_assembly_of_arithmetic,
             self.C_PUSH: self.get_assembly_of_push,
             self.C_POP: self.get_assembly_of_pop,
+            self.C_LABEL: self.get_assembly_of_label,
+            self.C_GOTO: self.get_assembly_of_goto,
         }
-        self.SEGMENT_CONSTANT = 9
         self.ARITHMETIC_COUNTER = 0
         self.FILE_NAME = input_file_name.split('.')[0]
 
@@ -38,6 +40,13 @@ class Parser:
         command_length = len(splited_input_text)
         if command_length == 1:
             return self.C_ARITHMETIC
+        elif command_length == 2:
+            if splited_input_text[0] == 'label':
+                return self.C_LABEL
+            elif splited_input_text[0] == 'if-goto':
+                return self.C_GOTO
+            else:
+                raise ValueError('Invalid input text.')
         elif command_length == 3:
             if splited_input_text[0] == 'push':
                 return self.C_PUSH
@@ -621,5 +630,42 @@ class Parser:
             '@{}.{}'.format(self.FILE_NAME, value),
             # '@{}'.format(16 + int(value)),
             'M=D',
+        ]
+        return assembly
+
+
+    def get_assembly_of_label(self, splited_input_text):
+        segment, label = splited_input_text[0], splited_input_text[1]
+        print(segment, label)
+        if segment == 'label':
+            return self.create_assembly_of_label(label)
+        else:
+            raise ValueError('Invalid input text.')
+
+
+    def create_assembly_of_label(self, value):
+        assembly = [
+            '({})'.format(value)
+        ]
+        return assembly
+
+
+    def get_assembly_of_goto(self, splited_input_text):
+        segment, label = splited_input_text[0], splited_input_text[1]
+        print(segment, label)
+        if segment == 'if-goto':
+            return self.create_assembly_of_goto(label)
+        else:
+            raise ValueError('Invalid input text.')
+
+
+    def create_assembly_of_goto(self, value):
+        assembly = [
+            '@SP',
+            'M=M-1',
+            'A=M',
+            'D=M',
+            '@{}'.format(value),
+            'D;JNE',
         ]
         return assembly
