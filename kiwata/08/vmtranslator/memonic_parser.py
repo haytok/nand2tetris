@@ -20,8 +20,9 @@ class Parser:
             self.C_ARITHMETIC: self.get_assembly_of_arithmetic,
             self.C_PUSH: self.get_assembly_of_push,
             self.C_POP: self.get_assembly_of_pop,
-            self.C_LABEL: self.get_assembly_of_label,
-            self.C_GOTO: self.get_assembly_of_goto,
+            self.C_LABEL: self.get_assembly_of_flow,
+            self.C_IF: self.get_assembly_of_flow,
+            self.C_GOTO: self.get_assembly_of_flow,
         }
         self.ARITHMETIC_COUNTER = 0
         self.FILE_NAME = input_file_name.split('.')[0]
@@ -44,6 +45,8 @@ class Parser:
             if splited_input_text[0] == 'label':
                 return self.C_LABEL
             elif splited_input_text[0] == 'if-goto':
+                return self.C_IF
+            elif splited_input_text[0] == 'goto':
                 return self.C_GOTO
             else:
                 raise ValueError('Invalid input text.')
@@ -634,11 +637,15 @@ class Parser:
         return assembly
 
 
-    def get_assembly_of_label(self, splited_input_text):
+    def get_assembly_of_flow(self, splited_input_text):
         segment, label = splited_input_text[0], splited_input_text[1]
         print(segment, label)
         if segment == 'label':
             return self.create_assembly_of_label(label)
+        elif segment == 'if-goto':
+            return self.create_assembly_of_if(label)
+        elif segment == 'goto':
+            return self.create_assembly_of_goto(label)
         else:
             raise ValueError('Invalid input text.')
 
@@ -650,16 +657,7 @@ class Parser:
         return assembly
 
 
-    def get_assembly_of_goto(self, splited_input_text):
-        segment, label = splited_input_text[0], splited_input_text[1]
-        print(segment, label)
-        if segment == 'if-goto':
-            return self.create_assembly_of_goto(label)
-        else:
-            raise ValueError('Invalid input text.')
-
-
-    def create_assembly_of_goto(self, value):
+    def create_assembly_of_if(self, value):
         assembly = [
             '@SP',
             'M=M-1',
@@ -667,5 +665,13 @@ class Parser:
             'D=M',
             '@{}'.format(value),
             'D;JNE',
+        ]
+        return assembly
+
+
+    def create_assembly_of_goto(self, value):
+        assembly = [
+            '@{}'.format(value),
+            '0;JMP',
         ]
         return assembly
