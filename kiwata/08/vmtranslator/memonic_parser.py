@@ -23,6 +23,9 @@ class Parser:
             self.C_LABEL: self.get_assembly_of_flow,
             self.C_IF: self.get_assembly_of_flow,
             self.C_GOTO: self.get_assembly_of_flow,
+            self.C_FUNCTION: self.get_assembly_of_function,
+            self.C_CALL: self.get_assembly_of_call,
+            self.C_RETURN: self.get_assembly_of_return,
         }
         self.ARITHMETIC_COUNTER = 0
         self.FILE_NAME = input_file_name.split('.')[0]
@@ -40,7 +43,10 @@ class Parser:
     def get_command_type(self, splited_input_text):
         command_length = len(splited_input_text)
         if command_length == 1:
-            return self.C_ARITHMETIC
+            if splited_input_text[0] == 'return':
+                return self.C_RETURN
+            else:
+                return self.C_ARITHMETIC
         elif command_length == 2:
             if splited_input_text[0] == 'label':
                 return self.C_LABEL
@@ -55,6 +61,10 @@ class Parser:
                 return self.C_PUSH
             elif splited_input_text[0] == 'pop':
                 return self.C_POP
+            elif splited_input_text[0] == 'function':
+                return self.C_FUNCTION
+            elif splited_input_text[0] == 'call':
+                return self.C_CALL
             else:
                 raise ValueError('Invalid input text.')
         else:
@@ -326,6 +336,7 @@ class Parser:
             raise ValueError('Invalid input text.')
 
 
+    # push constant value
     def get_assembly_of_push_constant(self, value):
         assembly = [
             '@{}'.format(value),
@@ -672,6 +683,95 @@ class Parser:
     def create_assembly_of_goto(self, value):
         assembly = [
             '@{}'.format(value),
+            '0;JMP',
+        ]
+        return assembly
+
+
+    def get_assembly_of_function(self, splited_input_text):
+        function_name, value = splited_input_text[1], splited_input_text[2]
+        print(function_name, value)
+        assembly = [
+            '({})'.format(function_name),
+        ]
+        for _ in range(int(value)):
+            assembly += [
+                '@SP',
+                'A=M',
+                'M=0',
+                '@SP',
+                'M=M+1',
+            ]
+        return assembly
+
+
+    def get_assembly_of_call(self, splited_input_text):
+        function_name, value = splited_input_text[1], splited_input_text[2]
+
+
+    def get_assembly_of_return(self, splited_input_text):
+        assembly = [
+            # FRAME = LCL
+            '@LCL',
+            'D=M',
+            '@R13',
+            'M=D',
+            # RET = *(FRAME - 5)
+            '@5',
+            'D=A',
+            '@R13',
+            'A=M-D',
+            'D=M',
+            '@R14',
+            'M=D',
+            #
+            '@SP',
+            'M=M-1',
+            'A=M',
+            'D=M',
+            '@ARG',
+            'A=M',
+            'M=D',
+            # SP = ARG + 1
+            '@ARG',
+            'D=M+1',
+            '@SP',
+            'M=D',
+            # THAT = *(FRAME - 1)
+            '@R13',
+            'A=M-1',
+            'D=M',
+            '@THAT',
+            'M=D',
+            # THIS = *(FRAME - 2)
+            '@2',
+            'D=A',
+            '@R13',
+            'A=M-D',
+            'D=M',
+            '@THIS',
+            'M=D',
+            # ARG = *(FRAME - 3)
+            '@3',
+            'D=A',
+            '@R13',
+            'A=M-D',
+            'D=M',
+            '@ARG',
+            'M=D',
+            # LCL = *(FRAME - 4)
+            '@4',
+            'D=A',
+            '@R13',
+            'A=M-D',
+            'D=M',
+            '@LCL',
+            'M=D',
+            # goto RET
+            '@R14',
+            # このコマンドは必要
+            # jump 命令では予め移動したいアドレスを A レジスタに設定しておく必要がある
+            'A=M',
             '0;JMP',
         ]
         return assembly
