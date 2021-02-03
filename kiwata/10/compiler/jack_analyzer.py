@@ -1,9 +1,12 @@
-import sys
 import re
+import sys
+
+from jack_tokenizer import Tokenizer
+
 
 def remove_comments(string):
     pattern = r"(\".*?\"|\'.*?\')|(/\*.*?\*/|//[^\r\n]*$)"
-    regex = re.compile(pattern, re.MULTILINE|re.DOTALL)
+    regex = re.compile(pattern, re.MULTILINE | re.DOTALL)
     def _replacer(match):
         if match.group(2) is not None:
             return ''
@@ -21,7 +24,7 @@ def main():
     splited_input_file_path = input_file_path.split('/')
     input_file_name = splited_input_file_path[-1]
     # Output
-    output_file_name = '{}.asm'.format(input_file_name.split('.')[0])
+    output_file_name = 'MyMainT.xml'
     output_file_path = '/'.join([*splited_input_file_path[:-1], output_file_name])
     # Text Processing
     del_commet = lambda value: value[:2] != '//'
@@ -40,14 +43,18 @@ def main():
     # Create Assembler.
     # parser = Parser(input_file_name=input_file_name)
     # commands = []
+    elements = [['<tokens>']]
     for input_text in input_texts:
-        print(input_text)
+        tokenizer = Tokenizer(input_text)
+        elements.append(tokenizer.elements)
+    elements.append(['</tokens>'])
+    print(elements)
         # for element in input_text.split():
         #     print(element)
     #     command = parser.get_advance(input_text)
     #     commands.append(command)
     # print(commands)
-    # create_hack_file(output_file_path, commands)
+    create_hack_file(output_file_path, elements)
 
 
 def get_file_text(file_path):
