@@ -6,14 +6,9 @@ from jack_tokenizer import Tokenizer
 
 
 def remove_comments(string):
-    pattern = r"(\".*?\"|\'.*?\')|(/\*.*?\*/|//[^\r\n]*|/\*\*.*|\*\s.*|\*\/.*$)"
+    pattern = r"^(//.*|/\*\*.*\*/|/\*\*.*|\*\s.*|\*/)$"
     regex = re.compile(pattern, re.MULTILINE | re.DOTALL)
-    def _replacer(match):
-        if match.group(2) is not None:
-            return ''
-        else:
-            return match.group(1)
-    return regex.sub(_replacer, string).strip()
+    return not regex.match(string)
 
 
 def main():
@@ -25,28 +20,38 @@ def main():
     splited_input_file_path = input_file_path.split('/')
     input_file_name = splited_input_file_path[-1]
     # Output
-    output_file_name = 'MyMainT.xml'
+    output_file_name = 'MySquareGameT.xml'
     output_file_path = '/'.join([*splited_input_file_path[:-1], output_file_name])
     # Text Processing
-    del_commet = lambda value: value[:2] != '//'
-    del_new_line = lambda value: value[:2] != '\n'
     del_blank_content = lambda value: value != ''
-    replace_new_line = lambda value: value.replace('\n', '').strip()
+    del_new_line_in_text = lambda value: value.replace('\n', '')
+    # 文中の // を削除して先頭と末尾と空白の文字列を削除
+    del_comment_in_line = lambda string: re.sub(r'//\s.*', '', string).strip()
     input_texts = list(
         filter(
             del_blank_content, map(
-                remove_comments, filter(
-                    del_new_line, filter(del_commet, input_texts)
+                del_comment_in_line, filter(
+                    remove_comments, map(
+                        del_new_line_in_text, input_texts
+                    )
                 )
             )
         )
     )
-    # elements = [['<tokens>']]
-    # tokenizer = Tokenizer(input_texts)
-    # elements.append(tokenizer.elements)
-    # elements.append(['</tokens>'])
-    # create_hack_file(output_file_path, elements)
-    engine = CompilationEngine(input_texts)
+    update_input_texts = []
+    for input_text in input_texts:
+        # プログラム中のコメントアウト (/** */) は上のテキスト処理では削除できないのでこの処理を追加
+        if remove_comments(input_text):
+            update_input_texts.append(input_text)
+
+    elements = [['<tokens>']]
+    tokenizer = Tokenizer(update_input_texts)
+    elements.append(tokenizer.elements)
+    elements.append(['</tokens>'])
+    create_hack_file(output_file_path, elements)
+
+    # engine = CompilationEngine(input_texts)
+    # engine.compile()
 
 
 def get_file_text(file_path):
