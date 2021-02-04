@@ -5,7 +5,7 @@ from jack_tokenizer import Tokenizer
 
 
 def remove_comments(string):
-    pattern = r"(\".*?\"|\'.*?\')|(/\*.*?\*/|//[^\r\n]*$)"
+    pattern = r"(\".*?\"|\'.*?\')|(/\*.*?\*/|//[^\r\n]*|/\*\*.*|\*\s.*|\*\/.*$)"
     regex = re.compile(pattern, re.MULTILINE | re.DOTALL)
     def _replacer(match):
         if match.group(2) is not None:
