@@ -1,6 +1,7 @@
 import re
 import sys
 
+from compilation_engine import CompilationEngine
 from jack_tokenizer import Tokenizer
 
 
@@ -40,21 +41,12 @@ def main():
             )
         )
     )
-    # Create Assembler.
-    # parser = Parser(input_file_name=input_file_name)
-    # commands = []
-    elements = [['<tokens>']]
-    for input_text in input_texts:
-        tokenizer = Tokenizer(input_text)
-        elements.append(tokenizer.elements)
-    elements.append(['</tokens>'])
-    print(elements)
-        # for element in input_text.split():
-        #     print(element)
-    #     command = parser.get_advance(input_text)
-    #     commands.append(command)
-    # print(commands)
-    create_hack_file(output_file_path, elements)
+    # elements = [['<tokens>']]
+    # tokenizer = Tokenizer(input_texts)
+    # elements.append(tokenizer.elements)
+    # elements.append(['</tokens>'])
+    # create_hack_file(output_file_path, elements)
+    engine = CompilationEngine(input_texts)
 
 
 def get_file_text(file_path):

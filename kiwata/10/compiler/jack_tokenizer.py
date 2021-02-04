@@ -4,13 +4,14 @@ from const import (IDENTIFIER_PATTERN, IDENTIFIER_TYPE, INTEGER_PATTERN,
 
 
 class Tokenizer:
-    def __init__(self, input_text):
-        self.input_text = input_text
-        self.tokens = []
+    def __init__(self, input_texts):
         self.elements = []
 
-        self.parse_text()
-        self.create_tokens()
+        for input_text in input_texts:
+            self.tokens = []
+            self.input_text = input_text
+            self.parse_text()
+            self.create_tokens()
 
     def parse_text(self):
         while True:
