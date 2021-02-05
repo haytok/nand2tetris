@@ -5,6 +5,7 @@ class Tokenizer:
     def __init__(self, input_texts):
         self.elements = []
         self.tokens = []
+        self.current_token = None
 
         for input_text in input_texts:
             self.current_tokens = []
@@ -29,6 +30,7 @@ class Tokenizer:
                 next_token = self.judge_token(string_next)
                 if token is not None and next_token is None:
                     self.current_tokens.append(token)
+                    self.tokens.append(token)
                     # class Main のケースで空白文字が入っているので、それを除去する
                     self.input_text = self.input_text[i:].lstrip()
                     break
@@ -65,3 +67,12 @@ class Tokenizer:
                     element, token.token_displayed, element
                 )
             )
+
+    def advance(self):
+        self.current_token = self.tokens.pop(0)
+
+    def see_next(self):
+        return self.tokens[0] if len(self.tokens) > 0 else None
+    
+    def next_is(self, tokens):
+        return self.see_next() in tokens

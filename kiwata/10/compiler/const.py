@@ -32,6 +32,9 @@ class BaseToken:
         else:
             self.token_displayed = token
 
+    def __str__(self):
+        return self.token_displayed
+
 
 class KeywordToken(BaseToken):
     def __init__(self, token, token_displayed=None):

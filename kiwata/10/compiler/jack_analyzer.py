@@ -20,7 +20,7 @@ def main():
     splited_input_file_path = input_file_path.split('/')
     input_file_name = splited_input_file_path[-1]
     # Output
-    output_file_name = 'MySquareGameT.xml'
+    output_file_name = 'My{}.xml'.format(input_file_name.split('.')[0])
     output_file_path = '/'.join([*splited_input_file_path[:-1], output_file_name])
     # Text Processing
     del_blank_content = lambda value: value != ''
@@ -44,14 +44,15 @@ def main():
         if remove_comments(input_text):
             update_input_texts.append(input_text)
 
-    elements = [['<tokens>']]
-    tokenizer = Tokenizer(update_input_texts)
-    elements.append(tokenizer.elements)
-    elements.append(['</tokens>'])
-    create_hack_file(output_file_path, elements)
+    # elements = [['<tokens>']]
+    # tokenizer = Tokenizer(update_input_texts)
+    # elements.append(tokenizer.elements)
+    # elements.append(['</tokens>'])
+    # create_hack_file(output_file_path, elements)
 
-    # engine = CompilationEngine(input_texts)
-    # engine.compile()
+    print('output_file_name: {}'.format(output_file_name))
+    with CompilationEngine(update_input_texts, output_file_path) as engine:
+        engine.compile()
 
 
 def get_file_text(file_path):
