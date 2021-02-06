@@ -71,8 +71,8 @@ class Tokenizer:
     def advance(self):
         self.current_token = self.tokens.pop(0)
 
-    def see_next(self):
-        return self.tokens[0] if len(self.tokens) > 0 else None
+    def see_next(self, index=0):
+        return self.tokens[index] if len(self.tokens) > index else None
     
-    def next_is(self, tokens):
-        return self.see_next() in tokens
+    def next_is(self, tokens, index=0):
+        return self.see_next(index) in tokens
