@@ -185,7 +185,6 @@ class CompilationEngine:
             self.compile_keyword(self.keyword_constant_tokens)
         elif isinstance(self.tokenizer.see_next(), IdentifierToken):
             # varName[expression]
-
             if self.tokenizer.next_is([Tokens.LEFT_SQUARE_BRACKET], index=1):
                 # varName
                 self.compile_var_name()
@@ -197,14 +196,22 @@ class CompilationEngine:
                 self.compile_symbol([Tokens.RIGHT_SQUARE_BRACKET])
             # subroutineCall
             elif self.tokenizer.next_is([Tokens.LEFT_ROUND_BRACKET, Tokens.DOT], index=1):
-                pass
+                self.compile_subroutine_call()
             # varName
             else:
                 self.compile_var_name()
         elif self.tokenizer.next_is([Tokens.LEFT_ROUND_BRACKET]):
-            pass
+            # (
+            self.compile_symbol([Tokens.LEFT_ROUND_BRACKET])
+            # expression
+            self.compile_expression()
+            # )
+            self.compile_symbol([Tokens.RIGHT_ROUND_BRACKET])
         elif self.tokenizer.next_is(self.unary_op_tokens):
-            pass
+            # unaryOp
+            self.compile_symbol(self.unary_op_tokens)
+            # term
+            self.compile_term()
         else:
             self.raise_syntax_error(self.tokenizer.see_next())
 
