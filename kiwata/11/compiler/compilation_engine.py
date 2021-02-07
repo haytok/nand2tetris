@@ -10,7 +10,8 @@ class CompilationEngine:
         self.wf = open(output_file_path, 'w')
         self.elements = []
 
-        symbol_table = SymbolTable(self.tokenizer)
+        self.symbol_table = SymbolTable()
+        self.symbol_table.show_tables()
 
         # tokens
         self.op_tokens = [
@@ -42,6 +43,12 @@ class CompilationEngine:
             Tokens.THIS,
         ]
 
+        # SymbolTable を作成するのに必要な変数
+        self.class_name = None
+        self.kind = None
+        self.var_type = None
+        self.var_name = None
+
     def __enter__(self):
         return self
 
@@ -49,14 +56,15 @@ class CompilationEngine:
         return self.wf.close()
     
     def compile(self):
-        # self.compile_class()
-        pass
+        self.compile_class()
 
     def compile_class(self):
         self.write_element_start('class')
 
         # class
         self.compile_keyword([Tokens.CLASS])
+        #
+        self.class_name = self.tokenizer.see_next()
         # className
         self.compile_class_name()
         # {
@@ -87,37 +95,55 @@ class CompilationEngine:
     def compile_var_dec(self):
         self.write_element_start('varDec')
 
+        self.kind = SymbolKind.VAR
         # var
         self.compile_keyword([Tokens.VAR])
         # type
         self.compile_type()
+        self.var_type = self.tokenizer.current_token
         # varName
         self.compile_var_name()
+        self.var_name = self.tokenizer.current_token
+        self.symbol_table.define(self.var_name, self.var_type, self.kind)
         # (',' varName)*
         while self.tokenizer.next_is([Tokens.COMMA]):
             self.compile_symbol([Tokens.COMMA])
             self.compile_var_name()
+            self.var_name = self.tokenizer.current_token
+            self.symbol_table.define(self.var_name, self.var_type, self.kind)
         # ;
         self.compile_symbol([Tokens.SEMICOLON])
 
         self.write_element_end('varDec')
+
+    def get_kind(self, token):
+        if token == Tokens.STATIC:
+            return SymbolKind.STATIC
+        elif token == Tokens.FIELD:
+            return SymbolKind.FIELD
+        else:
+            return ValueError('Invalid token in get_kind.')
 
     def compile_class_var_dec(self):
         self.write_element_start('classVarDec')
 
         # static or field
         self.compile_keyword([Tokens.STATIC, Tokens.FIELD])
-
+        self.kind = self.get_kind(self.tokenizer.current_token)
         # type
         self.compile_type()
-
+        self.var_type = self.tokenizer.current_token
         # varName
         self.compile_var_name()
+        self.var_name = self.tokenizer.current_token
+        self.symbol_table.define(self.var_name, self.var_type, self.kind)
 
         # (, varName)*
         while self.tokenizer.next_is([Tokens.COMMA]):
             self.compile_symbol([Tokens.COMMA])
             self.compile_var_name()
+            self.var_name = self.tokenizer.current_token
+            self.symbol_table.define(self.var_name, self.var_type, self.kind)
 
         # ;
         self.compile_symbol([Tokens.SEMICOLON])
@@ -125,12 +151,20 @@ class CompilationEngine:
         self.write_element_end('classVarDec')
 
     def compile_subroutine_dec(self):
+        # Symbol Table の初期化
+        self.symbol_table.start_subroutine()
+
         self.write_element_start('subroutineDec')
 
         # constructor or function or method or void
         self.compile_keyword(
             [Tokens.CONSTRUCTOR, Tokens.FUNCTION, Tokens.METHOD, Tokens.VOID]
         )
+
+        # Symbol Table の作成
+        if self.tokenizer.current_token == Tokens.METHOD:
+            self.symbol_table.define('$this', self.class_name, SymbolKind.ARG)
+
         # void or type
         if self.tokenizer.next_is([Tokens.VOID]):
             self.compile_keyword([Tokens.VOID])
@@ -400,15 +434,22 @@ class CompilationEngine:
         self.write_element_start('parameterList')
         if self.tokenizer.see_next() in [Tokens.INT, Tokens.CHAR, Tokens.BOOLEAN] \
         or isinstance(self.tokenizer.see_next(), StringToken):
+            self.kind = SymbolKind.ARG
             # type
             self.compile_type()
+            self.var_type = self.tokenizer.current_token
             # varName
             self.compile_var_name()
+            self.var_name = self.tokenizer.current_token
+            self.symbol_table.define(self.var_name, self.var_type, self.kind)
             # (, type varName)*
             while self.tokenizer.next_is([Tokens.COMMA]):
                 self.compile_symbol([Tokens.COMMA])
                 self.compile_type()
+                self.var_type = self.tokenizer.current_token
                 self.compile_var_name()
+                self.var_name = self.tokenizer.current_token
+                self.symbol_table.define(self.var_name, self.var_type, self.kind)
         self.write_element_end('parameterList')
 
     def compile_type(self):

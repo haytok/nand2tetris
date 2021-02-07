@@ -1,18 +1,13 @@
 from const import SymbolKind
 
 class SymbolTable:
-    def __init__(self, tokenizer):
-        self.tokenizer = tokenizer
-        print(self.tokenizer)
+    def __init__(self):
         # スコープがクラス
         self.static_table = {}
         self.field_table = {}
         # スコープがサブルーチン
         self.argument_table = {}
         self.var_table = {}
-
-        for token in self.tokenizer.tokens:
-            print(token)
 
     def start_subroutine(self):
         self.argument_table = {}
@@ -27,7 +22,10 @@ class SymbolTable:
                 self.kind = kind
                 self.index = index
 
-        symbol = Symbol(name, var_type, kind, serl.var_count(kind))
+            def __str__(self):
+                return self.name
+
+        symbol = Symbol(name, var_type, kind, self.var_count(kind))
         if kind == SymbolKind.STATIC:
             self.static_table[name] = symbol
         elif kind == SymbolKind.FIELD:
@@ -38,6 +36,21 @@ class SymbolTable:
             self.var_table[name] = symbol
         else:
             raise ValueError('Invalid value in SymbolTable.define.')
+        self.show_tables()
+
+    def show_tables(self):
+        for item in self.static_table:
+            print('static_table', item, self.static_table[item].type)
+        print('-' * 10)
+        for item in self.field_table:
+            print('field_table', item, self.field_table[item].type)
+        print('-' * 10)
+        for item in self.argument_table:
+            print('argument_table', item, self.argument_table[item].type)
+        print('-' * 10)
+        for item in self.var_table:
+            print('var_table', item, self.var_table[item].type)
+        print('=' * 10)
 
     def var_count(self, kind):
         if kind == SymbolKind.STATIC:
