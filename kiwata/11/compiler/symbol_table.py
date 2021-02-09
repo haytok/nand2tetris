@@ -36,7 +36,6 @@ class SymbolTable:
             self.var_table[name] = symbol
         else:
             raise ValueError('Invalid value in SymbolTable.define.')
-        self.show_tables()
 
     def show_tables(self):
         for item in self.static_table:
