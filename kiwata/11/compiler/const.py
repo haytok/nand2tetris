@@ -17,6 +17,31 @@ class SymbolKind:
     VAR = 3
 
 
+# セグメントタイプ
+class SegmentType:
+    CONST = 0
+    ARG = 1
+    LOCAL = 2
+    STATIC = 3
+    THIS = 4
+    THAT = 5
+    POINTER = 6
+    TEMP = 7
+
+
+# 算術演算タイプ
+class ArithmeticType:
+    ADD = 0
+    SUB = 1
+    NEG = 2
+    EQ = 3
+    GT = 4
+    LT = 5
+    AND = 6
+    OR = 7
+    NOT = 8
+
+
 def get_element(type):
     if type == TokenType.KEYWORD_TYPE:
         return 'keyword'

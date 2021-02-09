@@ -86,10 +86,10 @@ class SymbolTable:
         if name in self.static_table:
             return self.static_table[name]
         elif name in self.field_table:
-            return SymbolKind.FIELD[name]
+            return self.field_table[name]
         elif name in self.argument_table:
-            return SymbolKind.ARG[name]
+            return self.argument_table[name]
         elif name in self.var_table:
-            return SymbolKind.VAR[name]
+            return self.var_table[name]
         else:
             return None

@@ -3,10 +3,11 @@ import sys
 
 from compilation_engine import CompilationEngine
 from jack_tokenizer import Tokenizer
+from vm_writer import VMWriter
 
 
 def remove_comments(string):
-    pattern = r"^(//.*|/\*\*.*\*/|/\*\*.*|\*\s.*|\*/)$"
+    pattern = r"^(//.*|/\*\*.*\*/|/\*\*.*|\*\s.*|\*/|\s\*\s)$"
     regex = re.compile(pattern, re.MULTILINE | re.DOTALL)
     return not regex.match(string)
 
@@ -20,8 +21,10 @@ def main():
     splited_input_file_path = input_file_path.split('/')
     input_file_name = splited_input_file_path[-1]
     # Output
-    output_file_name = 'My{}.xml'.format(input_file_name.split('.')[0])
-    output_file_path = '/'.join([*splited_input_file_path[:-1], output_file_name])
+    output_tokenizer_file_name = '{}.xml'.format(input_file_name.split('.')[0])
+    output_tokenizer_file_path = '/'.join([*splited_input_file_path[:-1], output_tokenizer_file_name])
+    output_vm_file_name = '{}.vm'.format(input_file_name.split('.')[0])
+    output_vm_file_path = '/'.join([*splited_input_file_path[:-1], output_vm_file_name])
     # Text Processing
     del_blank_content = lambda value: value != ''
     del_new_line_in_text = lambda value: value.replace('\n', '')
@@ -44,15 +47,11 @@ def main():
         if remove_comments(input_text):
             update_input_texts.append(input_text)
 
-    # elements = [['<tokens>']]
-    # tokenizer = Tokenizer(update_input_texts)
-    # elements.append(tokenizer.elements)
-    # elements.append(['</tokens>'])
-    # create_hack_file(output_file_path, elements)
-
-    print('output_file_name: {}'.format(output_file_name))
-    with CompilationEngine(update_input_texts, output_file_path) as engine:
-        engine.compile()
+    print('output_tokenizer_file_name: {}'.format(output_tokenizer_file_name))
+    print('output_vm_file_name: {}'.format(output_vm_file_name))
+    with VMWriter(output_vm_file_path) as vmw:
+        with CompilationEngine(update_input_texts, output_tokenizer_file_path, vmw) as engine:
+            engine.compile()
 
 
 def get_file_text(file_path):
