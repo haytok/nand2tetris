@@ -41,13 +41,13 @@ class VMWriter:
             raise ValueError('Invalid arithmetic number.')
 
     def write_label(self, label):
-        pass
+        self.wf.write('label {}\n'.format(label))
 
     def write_goto(self, label):
-        pass
+        self.wf.write('goto {}\n'.format(label))
 
     def write_if(self, label):
-        pass
+        self.wf.write('if-goto {}\n'.format(label))
 
     def write_call(self, name, n_args):
         self.wf.write('call {} {}\n'.format(name, n_args))
@@ -57,6 +57,7 @@ class VMWriter:
 
     def write_return(self):
         self.write_code('return')
+        self.write_code('\n')
 
     def write_code(self, code):
         self.wf.write('{}\n'.format(code))
