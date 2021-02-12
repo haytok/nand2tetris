@@ -1,7 +1,18 @@
 ## テストプログラムの実行順序
 - Seven
+   - Main.jack
 - Decimal-to-Binary Conversion
+   - Main.jack
 - Square Dance
+   - Main.jack
+   - Square.jack
+   - SquareGame.jack
 - Average
+   - Main.jack
 - Pong
+   - Main.jack
+   - Ball.jack
+   - Bat.jack
+   - PongGame.jack
 - Complex Arrays
+   - Main.jack
