@@ -52,7 +52,7 @@ class VMWriter:
     def write_call(self, name, n_args):
         self.wf.write('call {} {}\n'.format(name, n_args))
 
-    def write_fanction(self, name, n_locals):
+    def write_function(self, name, n_locals):
         self.wf.write('function {} {}\n'.format(name, n_locals))
 
     def write_return(self):
