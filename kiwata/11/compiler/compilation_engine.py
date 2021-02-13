@@ -50,6 +50,13 @@ class CompilationEngine:
         self.var_type = None
         self.var_name = None
 
+        # VM
+        self.subroutine_class_name = None
+        self.subroutine_name = None
+        self.local_var_counts = 0
+        self.argument_counts = 0
+        self.arithmetic_commands = []
+
     def __enter__(self):
         return self
 
@@ -153,6 +160,14 @@ class CompilationEngine:
         # varDec*
         while not self.tokenizer.next_is(self.statement_tokens):
             self.compile_var_dec()
+            self.local_var_counts += 1
+
+        # VM
+        self.vmw.write_function(
+            '{}.{}'.format(self.class_name, self.subroutine_name),
+            self.local_var_counts,
+        )
+
         # statements
         self.compile_statements()
         # }
@@ -190,6 +205,8 @@ class CompilationEngine:
 
         if isinstance(self.tokenizer.see_next(), IntegerToken):
             self.compile_integer_constant()
+            # VM
+            self.vmw.write_push(SegmentType.CONST, self.tokenizer.current_token)
         elif isinstance(self.tokenizer.see_next(), StringToken):
             self.compile_string_constant()
         elif isinstance(self.tokenizer.see_next(), KeywordToken):
@@ -227,6 +244,7 @@ class CompilationEngine:
         else:
             self.raise_syntax_error(self.tokenizer.see_next())
 
+
         self.write_element_end('term')
 
     def compile_expression(self):
@@ -237,6 +255,8 @@ class CompilationEngine:
         if self.tokenizer.next_is(self.op_tokens):
             self.compile_op()
             self.compile_term()
+
+        self.argument_counts += 1
 
         self.write_element_end('expression')
 
@@ -251,6 +271,16 @@ class CompilationEngine:
             while self.tokenizer.next_is([Tokens.COMMA]):
                 self.compile_symbol([Tokens.COMMA])
                 self.compile_expression()
+
+        # VM
+        if self.arithmetic_commands:
+            for arithmetic_command in self.arithmetic_commands[::-1]:
+                if arithmetic_command == Tokens.PLUS:
+                    self.vmw.write_arithmetic(ArithmeticType.ADD)
+                elif arithmetic_command == Tokens.MULTI:
+                    self.vmw.write_call('Math.multiply', 2)
+                else:
+                    self.raise_syntax_error('Invalid arithmetic command.')
 
         self.write_element_end('expressionList')
 
@@ -279,6 +309,16 @@ class CompilationEngine:
             self.compile_expression_list()
             # )
             self.compile_symbol([Tokens.RIGHT_ROUND_BRACKET])
+
+            # VM
+            function_name = '{}.{}'.format(self.subroutine_class_name, self.subroutine_name)
+            if function_name in ['Output.printInt']:
+                self.argument_counts = 1
+            self.vmw.write_call(
+                function_name,
+                self.argument_counts,
+            )
+            self.vmw.write_pop(SegmentType.TEMP, 0)
         else:
             self.raise_syntax_error(self.tokenizer.see_next(index=1))
 
@@ -376,6 +416,11 @@ class CompilationEngine:
         # expression?
         if not self.tokenizer.next_is([Tokens.SEMICOLON]):
             self.compile_expression()
+
+        # VM (返り値がある場合は考慮してない)
+        self.vmw.write_push(SegmentType.CONST, 0)
+        self.vmw.write_return()
+
         # ;
         self.compile_symbol([Tokens.SEMICOLON])
 
@@ -431,6 +476,7 @@ class CompilationEngine:
 
     def compile_op(self):
         self.compile_symbol(self.op_tokens)
+        self.arithmetic_commands.append(self.tokenizer.current_token)
 
     def compile_type(self):
         self.tokenizer.advance()
@@ -442,9 +488,11 @@ class CompilationEngine:
 
     def compile_class_name(self):
         self.compile_identifier()
+        self.subroutine_class_name = self.tokenizer.current_token
 
     def compile_subroutine_name(self):
         self.compile_identifier()
+        self.subroutine_name = self.tokenizer.current_token
 
     def compile_var_name(self):
         self.compile_identifier()
