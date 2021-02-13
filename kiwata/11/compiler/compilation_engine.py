@@ -49,14 +49,6 @@ class CompilationEngine:
         self.kind = None
         self.var_type = None
         self.var_name = None
-        self.subroutine_type = None
-        self.subroutine_class_name = None
-        self.subroutine_name = None
-        self.arithmetic_commands = []
-        self.unary_op_token = None
-        self.expression_counts = 0
-        self.let_var_name = None
-        self.label_number = 0
 
     def __enter__(self):
         return self
@@ -91,16 +83,82 @@ class CompilationEngine:
 
         self.write_element_end('class')
 
-    def compile_keyword(self, keyword_tokens):
-        self.tokenizer.advance()
-        if self.tokenizer.current_token in keyword_tokens:
-            self.write_element(self.tokenizer.current_token)
-        else:
-            self.raise_syntax_error(self.tokenizer.current_token)
+    def compile_class_var_dec(self):
+        self.write_element_start('classVarDec')
 
-    def compile_class_name(self):
-        self.compile_identifier()
-        self.subroutine_class_name = self.tokenizer.current_token
+        # static or field
+        self.compile_keyword([Tokens.STATIC, Tokens.FIELD])
+        self.kind = self.get_kind(self.tokenizer.current_token)
+        # type
+        self.compile_type()
+        self.var_type = self.tokenizer.current_token
+        # varName
+        self.compile_var_name()
+        self.var_name = self.tokenizer.current_token
+        self.symbol_table.define(self.var_name.token, self.var_type, self.kind)
+
+        # (, varName)*
+        while self.tokenizer.next_is([Tokens.COMMA]):
+            self.compile_symbol([Tokens.COMMA])
+            self.compile_var_name()
+            # Symbol
+            self.var_name = self.tokenizer.current_token
+            self.symbol_table.define(self.var_name.token, self.var_type, self.kind)
+
+        # ;
+        self.compile_symbol([Tokens.SEMICOLON])
+
+        self.write_element_end('classVarDec')
+
+    def compile_subroutine_dec(self):
+        # Symbol Table の初期化
+        self.symbol_table.start_subroutine()
+
+        self.write_element_start('subroutineDec')
+
+        # constructor or function or method or void
+        self.compile_keyword(
+            [Tokens.CONSTRUCTOR, Tokens.FUNCTION, Tokens.METHOD, Tokens.VOID]
+        )
+
+        # Symbol Table の作成
+        if self.tokenizer.current_token == Tokens.METHOD:
+            self.symbol_table.define('$this', self.class_name, SymbolKind.ARG)
+
+        # void or type
+        if self.tokenizer.next_is([Tokens.VOID]):
+            self.compile_keyword([Tokens.VOID])
+        else:
+            self.compile_type()
+
+        # subroutineName
+        self.compile_subroutine_name()
+
+        # (
+        self.compile_symbol([Tokens.LEFT_ROUND_BRACKET])
+        # parameterList
+        self.compile_parameter_list()
+        # )
+        self.compile_symbol([Tokens.RIGHT_ROUND_BRACKET])
+        # subroutineBody
+        self.compile_subroutine_body()
+
+        self.write_element_end('subroutineDec')
+
+    def compile_subroutine_body(self):
+        self.write_element_start('subroutineBody')
+
+        # {
+        self.compile_keyword([Tokens.LEFT_CURLY_BRACKET])
+        # varDec*
+        while not self.tokenizer.next_is(self.statement_tokens):
+            self.compile_var_dec()
+        # statements
+        self.compile_statements()
+        # }
+        self.compile_keyword([Tokens.RIGHT_CURLY_BRACKET])
+
+        self.write_element_end('subroutineBody')
 
     def compile_var_dec(self):
         self.write_element_start('varDec')
@@ -127,137 +185,11 @@ class CompilationEngine:
 
         self.write_element_end('varDec')
 
-    def get_kind(self, token):
-        if token == Tokens.STATIC:
-            return SymbolKind.STATIC
-        elif token == Tokens.FIELD:
-            return SymbolKind.FIELD
-        else:
-            return ValueError('Invalid token in get_kind.')
-
-    def compile_class_var_dec(self):
-        self.write_element_start('classVarDec')
-
-        # static or field
-        self.compile_keyword([Tokens.STATIC, Tokens.FIELD])
-        self.kind = self.get_kind(self.tokenizer.current_token)
-        # type
-        self.compile_type()
-        self.var_type = self.tokenizer.current_token
-        # varName
-        self.compile_var_name()
-        self.var_name = self.tokenizer.current_token
-        self.symbol_table.define(self.var_name.token, self.var_type, self.kind)
-
-        # (, varName)*
-        while self.tokenizer.next_is([Tokens.COMMA]):
-            self.compile_symbol([Tokens.COMMA])
-            self.compile_var_name()
-            self.var_name = self.tokenizer.current_token
-            self.symbol_table.define(self.var_name.token, self.var_type, self.kind)
-
-        # ;
-        self.compile_symbol([Tokens.SEMICOLON])
-
-        self.write_element_end('classVarDec')
-
-    def compile_subroutine_dec(self):
-        # Symbol Table の初期化
-        self.symbol_table.start_subroutine()
-
-        self.write_element_start('subroutineDec')
-
-        # constructor or function or method or void
-        self.compile_keyword(
-            [Tokens.CONSTRUCTOR, Tokens.FUNCTION, Tokens.METHOD, Tokens.VOID]
-        )
-        # VM
-        self.subroutine_type = self.tokenizer.current_token
-
-        # Symbol Table の作成
-        if self.tokenizer.current_token == Tokens.METHOD:
-            self.symbol_table.define('$this', self.class_name, SymbolKind.ARG)
-
-        # void or type
-        if self.tokenizer.next_is([Tokens.VOID]):
-            self.compile_keyword([Tokens.VOID])
-        else:
-            self.compile_type()
-
-        # subroutineName
-        self.compile_subroutine_name()
-
-        # VM
-        self.subroutine_name = self.tokenizer.current_token
-
-        # (
-        self.compile_symbol([Tokens.LEFT_ROUND_BRACKET])
-        # parameterList
-        self.compile_parameter_list()
-        # )
-        self.compile_symbol([Tokens.RIGHT_ROUND_BRACKET])
-        # subroutineBody
-        self.compile_subroutine_body()
-
-        self.write_element_end('subroutineDec')
-
-    def compile_subroutine_body(self):
-        self.write_element_start('subroutineBody')
-        # {
-        self.compile_keyword([Tokens.LEFT_CURLY_BRACKET])
-        # varDec*
-        while not self.tokenizer.next_is(self.statement_tokens):
-            self.compile_var_dec()
-
-        # var_table が定義された時点で vmw.write_function を呼び出す
-        # VM
-        if self.subroutine_type == Tokens.FUNCTION:
-            vm_function_name = '{}.{}'.format(
-                self.class_name,
-                self.subroutine_name,
-            )
-            self.vmw.write_fanction(vm_function_name, self.symbol_table.var_count(SymbolKind.VAR))
-
-        # statements
-        self.compile_statements()
-        # }
-        self.compile_keyword([Tokens.RIGHT_CURLY_BRACKET])
-        self.write_element_end('subroutineBody')
-
-    def compile_integer_constant(self):
-        self.tokenizer.advance()
-        if isinstance(self.tokenizer.current_token, IntegerToken):
-            self.write_element(self.tokenizer.current_token)
-        else:
-            self.raise_syntax_error(self.tokenizer.current_token)
-
-    def compile_string_constant(self):
-        self.tokenizer.advance()
-        if isinstance(self.tokenizer.current_token, StringToken):
-            self.write_element(self.tokenizer.current_token)
-        else:
-            self.raise_syntax_error(self.tokenizer.current_token)
-
-    def compile_op(self):
-        self.compile_symbol(self.op_tokens)
-
-    def get_unary_op_command(self, token):
-        if token == Tokens.MINUS:
-            self.vmw.write_code('neg')
-        elif token == Tokens.TILDE:
-            self.vmw.write_code('not')
-        else:
-            raise ValueError('Invalid unaryOp.')
-
     def compile_term(self):
         self.write_element_start('term')
 
         if isinstance(self.tokenizer.see_next(), IntegerToken):
             self.compile_integer_constant()
-            self.vmw.write_push(SegmentType.CONST, self.tokenizer.current_token)
-            if self.unary_op_token:
-                self.get_unary_op_command(self.unary_op_token)
-                self.unary_op_token = None
         elif isinstance(self.tokenizer.see_next(), StringToken):
             self.compile_string_constant()
         elif isinstance(self.tokenizer.see_next(), KeywordToken):
@@ -276,10 +208,6 @@ class CompilationEngine:
             # subroutineCall
             elif self.tokenizer.next_is([Tokens.LEFT_ROUND_BRACKET, Tokens.DOT], index=1):
                 self.compile_subroutine_call()
-                self.vmw.write_call(
-                    '{}.{}'.format(self.subroutine_class_name, self.subroutine_name),
-                    self.expression_counts,
-                )
             # varName
             else:
                 self.compile_var_name()
@@ -294,7 +222,6 @@ class CompilationEngine:
         elif self.tokenizer.next_is(self.unary_op_tokens):
             # unaryOp
             self.compile_symbol(self.unary_op_tokens)
-            self.unary_op_token = self.tokenizer.current_token
             # term
             self.compile_term()
         else:
@@ -309,7 +236,6 @@ class CompilationEngine:
         # (op term)*
         if self.tokenizer.next_is(self.op_tokens):
             self.compile_op()
-            self.arithmetic_commands.append(self.tokenizer.current_token)
             self.compile_term()
 
         self.write_element_end('expression')
@@ -317,17 +243,14 @@ class CompilationEngine:
     def compile_expression_list(self):
         self.write_element_start('expressionList')
 
-        self.expression_counts = 0
         # (expression (',' expression)* )?
         if not self.tokenizer.next_is([Tokens.RIGHT_ROUND_BRACKET]):
             # expression
-            self.expression_counts += 1
             self.compile_expression()
             # (',' expression)*
             while self.tokenizer.next_is([Tokens.COMMA]):
                 self.compile_symbol([Tokens.COMMA])
                 self.compile_expression()
-                self.expression_counts += 1
 
         self.write_element_end('expressionList')
 
@@ -366,8 +289,6 @@ class CompilationEngine:
         self.compile_keyword([Tokens.LET])
         # varName
         self.compile_var_name()
-        # VM
-        self.let_var_name = self.tokenizer.current_token
         # ('[' expression ']')?
         if self.tokenizer.next_is([Tokens.LEFT_SQUARE_BRACKET]):
             # [
@@ -380,24 +301,6 @@ class CompilationEngine:
         self.compile_symbol([Tokens.EQUAL])
         # expression
         self.compile_expression()
-        # letStatement の右辺が true, valse の場合
-        if isinstance(self.tokenizer.current_token, KeywordToken):
-            if self.tokenizer.current_token == Tokens.TRUE:
-                self.vmw.write_push(SegmentType.CONST, 0)
-                self.vmw.write_arithmetic(ArithmeticType.NEG)
-                self.vmw.write_push(
-                    SegmentType.LOCAL,
-                    str(self.symbol_table.index_of(self.let_var_name.token)),
-                )
-            elif self.tokenizer.current_token == Tokens.FALSE:
-                self.vmw.write_push(SegmentType.CONST, 0)
-            else:
-                raise ValueError('Invalid token.')
-        # VM Array は考慮せずに代入
-        # letStatement の右辺が式のケースを実装
-        elif isinstance(self.tokenizer.current_token, SymbolToken):
-            self.vmw.write_pop(SegmentType.LOCAL, 0)
-            self.vmw.write_push(SegmentType.LOCAL, 0)
         # ;
         self.compile_symbol([Tokens.SEMICOLON])
 
@@ -460,25 +363,6 @@ class CompilationEngine:
         self.compile_keyword([Tokens.DO])
         # subroutineCall
         self.compile_subroutine_call()
-        for arithmetic_command in self.arithmetic_commands[::-1]:
-            # VM
-            n_args = 2
-            if arithmetic_command == Tokens.PLUS:
-                self.vmw.write_arithmetic(ArithmeticType.ADD)
-            elif arithmetic_command == Tokens.MINUS:
-                self.vmw.write_arithmetic(ArithmeticType.SUB)
-            elif arithmetic_command == Tokens.MULTI:
-                self.vmw.write_call('Math.multiply', n_args)
-            elif arithmetic_command == Tokens.DIV:
-                self.vmw.write_call('Math.divide', n_args)
-            else:
-                raise ValueError('Invalid an op token.')
-        self.vmw.write_call(
-            '{}.{}'.format(self.subroutine_class_name, self.subroutine_name),
-            self.expression_counts,
-        )
-        self.vmw.write_pop(SegmentType.TEMP, 0)
-
         # ;
         self.compile_symbol([Tokens.SEMICOLON])
 
@@ -508,18 +392,17 @@ class CompilationEngine:
             self.compile_do_statement()
         elif self.tokenizer.next_is([Tokens.RETURN]):
             self.compile_return_statement()
-            # VM
-            self.vmw.write_push(SegmentType.CONST, 0)
-            self.vmw.write_return()
         else:
             self.raise_syntax_error(self.tokenizer.see_next())
 
     def compile_statements(self):
         self.write_element_start('statements')
+
         while self.tokenizer.next_is(
             [Tokens.LET, Tokens.IF, Tokens.WHILE, Tokens.DO, Tokens.RETURN]
         ):
             self.compile_statement()
+
         self.write_element_end('statements')
 
     def compile_parameter_list(self):
@@ -546,10 +429,29 @@ class CompilationEngine:
 
         self.write_element_end('parameterList')
 
+    def compile_op(self):
+        self.compile_symbol(self.op_tokens)
+
     def compile_type(self):
         self.tokenizer.advance()
         if self.tokenizer.current_token in [Tokens.INT, Tokens.CHAR, Tokens.BOOLEAN] \
         or isinstance(self.tokenizer.current_token, IdentifierToken):
+            self.write_element(self.tokenizer.current_token)
+        else:
+            self.raise_syntax_error(self.tokenizer.current_token)
+
+    def compile_class_name(self):
+        self.compile_identifier()
+
+    def compile_subroutine_name(self):
+        self.compile_identifier()
+
+    def compile_var_name(self):
+        self.compile_identifier()
+
+    def compile_keyword(self, keyword_tokens):
+        self.tokenizer.advance()
+        if self.tokenizer.current_token in keyword_tokens:
             self.write_element(self.tokenizer.current_token)
         else:
             self.raise_syntax_error(self.tokenizer.current_token)
@@ -561,12 +463,19 @@ class CompilationEngine:
         else:
             self.raise_syntax_error(self.tokenizer.current_token)
 
-    def compile_subroutine_name(self):
-        self.compile_identifier()
-        self.subroutine_name = self.tokenizer.current_token
+    def compile_integer_constant(self):
+        self.tokenizer.advance()
+        if isinstance(self.tokenizer.current_token, IntegerToken):
+            self.write_element(self.tokenizer.current_token)
+        else:
+            self.raise_syntax_error(self.tokenizer.current_token)
 
-    def compile_var_name(self):
-        self.compile_identifier()
+    def compile_string_constant(self):
+        self.tokenizer.advance()
+        if isinstance(self.tokenizer.current_token, StringToken):
+            self.write_element(self.tokenizer.current_token)
+        else:
+            self.raise_syntax_error(self.tokenizer.current_token)
 
     def compile_identifier(self):
         self.tokenizer.advance()
@@ -589,3 +498,11 @@ class CompilationEngine:
 
     def raise_syntax_error(self, token):
         raise ValueError('Invalid syntax of {}'.format(token))
+
+    def get_kind(self, token):
+        if token == Tokens.STATIC:
+            return SymbolKind.STATIC
+        elif token == Tokens.FIELD:
+            return SymbolKind.FIELD
+        else:
+            return ValueError('Invalid token in get_kind.')
