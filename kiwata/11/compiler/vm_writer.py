@@ -57,7 +57,6 @@ class VMWriter:
 
     def write_return(self):
         self.write_code('return')
-        self.write_code('\n')
 
     def write_code(self, code):
         self.wf.write('{}\n'.format(code))

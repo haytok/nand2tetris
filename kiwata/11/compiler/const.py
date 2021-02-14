@@ -17,7 +17,7 @@ class SymbolKind:
     VAR = 3
 
 
-# セグメントタイプ
+# セグメントタイプ (VM 用)
 class SegmentType:
     CONST = 0
     ARG = 1
@@ -29,7 +29,7 @@ class SegmentType:
     TEMP = 7
 
 
-# 算術演算タイプ
+# 算術演算タイプ (VM 用)
 class ArithmeticType:
     ADD = 0
     SUB = 1
