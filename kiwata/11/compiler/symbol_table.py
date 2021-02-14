@@ -82,6 +82,7 @@ class SymbolTable:
         else:
             raise ValueError('Invalid valud in SymbolTable.index_of.')
 
+    # name は文字列型
     def _find_by_name(self, name):
         if name in self.static_table:
             return self.static_table[name]
