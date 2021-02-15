@@ -215,7 +215,7 @@ class CompilationEngine:
         elif isinstance(self.tokenizer.see_next(), KeywordToken):
             if self.tokenizer.see_next() == Tokens.TRUE:
                 self.vmw.write_push(SegmentType.CONST, 1)
-                self.vmw.write_arithmetic(ArithmeticType.NOT)
+                self.vmw.write_arithmetic(ArithmeticType.NEG)
             elif self.tokenizer.see_next() == Tokens.FALSE:
                 self.vmw.write_push(SegmentType.CONST, 0)
             self.compile_keyword(self.keyword_constant_tokens)
