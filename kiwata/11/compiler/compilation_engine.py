@@ -98,17 +98,12 @@ class CompilationEngine:
         self.compile_type()
         self.var_type = self.tokenizer.current_token
         # varName
-        self.compile_var_name(define=True)
-        self.var_name = self.tokenizer.current_token
-        self.symbol_table.define(self.var_name.token, self.var_type, self.kind)
+        self.compile_var_name(define=True, var_type=self.var_type, kind=self.kind)
 
         # (, varName)*
         while self.tokenizer.next_is([Tokens.COMMA]):
             self.compile_symbol([Tokens.COMMA])
-            self.compile_var_name(define=True)
-            # Symbol
-            self.var_name = self.tokenizer.current_token
-            self.symbol_table.define(self.var_name.token, self.var_type, self.kind)
+            self.compile_var_name(define=True, var_type=self.var_type, kind=self.kind)
 
         # ;
         self.compile_symbol([Tokens.SEMICOLON])
@@ -170,6 +165,18 @@ class CompilationEngine:
         # VM
         function_name = '{}.{}'.format(self.class_name, subroutine_name)
         self.vmw.write_function(function_name, local_var_counts)
+        if subroutine_type == Tokens.CONSTRUCTOR:
+            self.vmw.write_push(
+                SegmentType.CONST,
+                self.symbol_table.var_count(SymbolKind.FIELD)
+            )
+            self.vmw.write_call('Memory.alloc', 1)
+            self.vmw.write_pop(SegmentType.POINTER, 0)
+        elif subroutine_type == Tokens.METHOD:
+            self.vmw.write_push(SegmentType.ARG, 0)
+            self.vmw.write_pop(SegmentType.POINTER, 0)
+        else:
+            self.raise_syntax_error('Invalid subroutine type.')
 
         # statements
         self.compile_statements()
@@ -218,6 +225,8 @@ class CompilationEngine:
                 self.vmw.write_arithmetic(ArithmeticType.NEG)
             elif self.tokenizer.see_next() == Tokens.FALSE:
                 self.vmw.write_push(SegmentType.CONST, 0)
+            elif self.tokenizer.see_next() == Tokens.THIS:
+                self.vmw.write_push(SegmentType.POINTER, 0)
             self.compile_keyword(self.keyword_constant_tokens)
         elif isinstance(self.tokenizer.see_next(), IdentifierToken):
             # varName[expression]
@@ -326,29 +335,57 @@ class CompilationEngine:
         if self.tokenizer.next_is([Tokens.LEFT_ROUND_BRACKET], index=1):
             # subroutinename
             self.compile_subroutine_name()
+
+            # VM
+            subroutine_name = self.tokenizer.current_token.token
+
             # (
             self.compile_symbol([Tokens.LEFT_ROUND_BRACKET])
             # expressionList
-            self.compile_expression_list()
+            argument_counts = self.compile_expression_list()
+            argument_counts += 1
             # )
             self.compile_symbol([Tokens.RIGHT_ROUND_BRACKET])
+
+            # VM
+            self.vmw.write_push(SegmentType.POINTER, 0)
+            function_name = '{}.{}'.format(self.class_name, subroutine_name)
+            self.vmw.write_call(function_name, argument_counts)
         # . のケース
         elif self.tokenizer.next_is([Tokens.DOT], index=1):
             # className | varName
             self.compile_class_name()
             # varName (クラスのインスタンスのメソッドを使用するケース)
             if self.symbol_table.kind_of(self.tokenizer.current_token.token) is not None:
-                pass
-                # # .
-                # self.compile_symbol([Tokens.DOT])
-                # # subroutineName
-                # self.compile_subroutine_name()
-                # # (
-                # self.compile_symbol([Tokens.LEFT_ROUND_BRACKET])
-                # # expressionList
-                # self.compile_expression_list()
-                # # )
-                # self.compile_symbol([Tokens.RIGHT_ROUND_BRACKET])
+                # VM
+                instance_name = self.tokenizer.current_token.token
+
+                # .
+                self.compile_symbol([Tokens.DOT])
+                # subroutineName
+                self.compile_subroutine_name()
+
+                # VM
+                subroutine_name = self.tokenizer.current_token.token
+                kind = self.symbol_table.kind_of(instance_name)
+                index = self.symbol_table.index_of(instance_name)
+                segment_type = self.get_segment_type(kind)
+                self.vmw.write_push(segment_type, index)
+
+                # (
+                self.compile_symbol([Tokens.LEFT_ROUND_BRACKET])
+                # expressionList
+                argument_counts = self.compile_expression_list()
+                argument_counts += 1
+                # )
+                self.compile_symbol([Tokens.RIGHT_ROUND_BRACKET])
+
+                # VM
+                function_name = '{}.{}'.format(
+                    self.symbol_table.type_of(instance_name),
+                    subroutine_name,
+                )
+                self.vmw.write_call(function_name, argument_counts)
             # className (例えば Output.printInt 関数を使用するケース)
             else:
                 # VM
@@ -511,8 +548,6 @@ class CompilationEngine:
         # expression?
         if not self.tokenizer.next_is([Tokens.SEMICOLON]):
             self.compile_expression()
-            # 返り値が存在する時
-            # self.vmw.write_push(SegmentType.CONST, self.tokenizer.current_token)
         else:
             self.vmw.write_push(SegmentType.CONST, 0)
         # ;
