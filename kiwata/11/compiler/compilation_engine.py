@@ -113,7 +113,6 @@ class CompilationEngine:
     def compile_subroutine_dec(self):
         # Symbol Table の初期化
         self.symbol_table.start_subroutine()
-
         self.write_element_start('subroutineDec')
 
         # constructor or function or method or void
@@ -226,7 +225,7 @@ class CompilationEngine:
             if self.tokenizer.see_next() == Tokens.TRUE:
                 self.vmw.write_push(SegmentType.CONST, 1)
                 self.vmw.write_arithmetic(ArithmeticType.NEG)
-            elif self.tokenizer.see_next() == Tokens.FALSE:
+            elif self.tokenizer.see_next() in [Tokens.FALSE, Tokens.NULL]:
                 self.vmw.write_push(SegmentType.CONST, 0)
             elif self.tokenizer.see_next() == Tokens.THIS:
                 self.vmw.write_push(SegmentType.POINTER, 0)
@@ -621,7 +620,9 @@ class CompilationEngine:
         self.write_element_start('parameterList')
 
         if self.tokenizer.see_next() in [Tokens.INT, Tokens.CHAR, Tokens.BOOLEAN] \
-        or isinstance(self.tokenizer.see_next(), StringToken):
+        or isinstance(self.tokenizer.see_next(), StringToken) \
+        or isinstance(self.tokenizer.see_next(), IdentifierToken):
+
             self.kind = SymbolKind.ARG
             # type
             self.compile_type()
