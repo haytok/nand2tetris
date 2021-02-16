@@ -154,6 +154,7 @@ class CompilationEngine:
     def compile_subroutine_body(self, subroutine_type, subroutine_name):
         self.write_element_start('subroutineBody')
 
+
         # {
         self.compile_keyword([Tokens.LEFT_CURLY_BRACKET])
         # varDec*
@@ -175,6 +176,8 @@ class CompilationEngine:
         elif subroutine_type == Tokens.METHOD:
             self.vmw.write_push(SegmentType.ARG, 0)
             self.vmw.write_pop(SegmentType.POINTER, 0)
+        elif subroutine_type == Tokens.FUNCTION:
+            pass
         else:
             self.raise_syntax_error('Invalid subroutine type.')
 
@@ -233,12 +236,26 @@ class CompilationEngine:
             if self.tokenizer.next_is([Tokens.LEFT_SQUARE_BRACKET], index=1):
                 # varName
                 self.compile_var_name(is_other=True)
+
+                # VM
+                var_name = self.tokenizer.current_token.token
+                kind = self.symbol_table.kind_of(var_name)
+                index = self.symbol_table.index_of(var_name)
+                segment_type = self.get_segment_type(kind)
+                self.vmw.write_push(segment_type, index)
+
                 # [
                 self.compile_symbol([Tokens.LEFT_SQUARE_BRACKET])
                 # expression
                 self.compile_expression()
                 # ]
                 self.compile_symbol([Tokens.RIGHT_SQUARE_BRACKET])
+
+                # VM a[i] のケースのみを考慮
+                self.vmw.write_arithmetic(ArithmeticType.ADD)
+                self.vmw.write_pop(SegmentType.POINTER, 1)
+                self.vmw.write_push(SegmentType.THAT, 0)
+
             # subroutineCall
             elif self.tokenizer.next_is([Tokens.LEFT_ROUND_BRACKET, Tokens.DOT], index=1):
                 self.compile_subroutine_call()
@@ -422,6 +439,9 @@ class CompilationEngine:
 
         # VM
         let_var_name = self.tokenizer.current_token.token
+        kind = self.symbol_table.kind_of(let_var_name)
+        index = self.symbol_table.index_of(let_var_name)
+        segment_type = self.get_segment_type(kind)
 
         # ('[' expression ']')?
         if self.tokenizer.next_is([Tokens.LEFT_SQUARE_BRACKET]):
@@ -431,18 +451,34 @@ class CompilationEngine:
             self.compile_expression()
             # ]
             self.compile_symbol([Tokens.RIGHT_SQUARE_BRACKET])
-        # =
-        self.compile_symbol([Tokens.EQUAL])
-        # expression
-        self.compile_expression()
-        # ;
-        self.compile_symbol([Tokens.SEMICOLON])
 
-        # VM
-        kind = self.symbol_table.kind_of(let_var_name)
-        index = self.symbol_table.index_of(let_var_name)
-        segment_type = self.get_segment_type(kind)
-        self.vmw.write_pop(segment_type, index)
+            # VM a[i] のケースのみを考慮
+            self.vmw.write_push(segment_type, index)
+            self.vmw.write_arithmetic(ArithmeticType.ADD)
+            self.vmw.write_pop(SegmentType.TEMP, 1)
+
+            # =
+            self.compile_symbol([Tokens.EQUAL])
+            # expression
+            self.compile_expression()
+
+            # VM
+            self.vmw.write_push(SegmentType.TEMP, 1)
+            self.vmw.write_pop(SegmentType.POINTER, 1)
+            self.vmw.write_pop(SegmentType.THAT, 0)
+
+            # ;
+            self.compile_symbol([Tokens.SEMICOLON])
+        else:
+            # =
+            self.compile_symbol([Tokens.EQUAL])
+            # expression
+            self.compile_expression()
+            # ;
+            self.compile_symbol([Tokens.SEMICOLON])
+
+            # VM
+            self.vmw.write_pop(segment_type, index)
 
         self.write_element_end('letStatement')
 
@@ -660,6 +696,14 @@ class CompilationEngine:
         self.tokenizer.advance()
         if isinstance(self.tokenizer.current_token, StringToken):
             self.write_element(self.tokenizer.current_token)
+            # VM
+            string = str(self.tokenizer.current_token)
+            length = len(string)
+            self.vmw.write_push(SegmentType.CONST, length)
+            self.vmw.write_call('String.new', 1)
+            for s in string:
+                self.vmw.write_push(SegmentType.CONST, ord(s))
+                self.vmw.write_call('String.appendChar', 2)
         else:
             self.raise_syntax_error(self.tokenizer.current_token)
 
