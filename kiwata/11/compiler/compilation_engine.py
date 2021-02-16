@@ -355,6 +355,7 @@ class CompilationEngine:
 
             # VM
             subroutine_name = self.tokenizer.current_token.token
+            self.vmw.write_push(SegmentType.POINTER, 0)
 
             # (
             self.compile_symbol([Tokens.LEFT_ROUND_BRACKET])
@@ -364,8 +365,6 @@ class CompilationEngine:
             # )
             self.compile_symbol([Tokens.RIGHT_ROUND_BRACKET])
 
-            # VM
-            self.vmw.write_push(SegmentType.POINTER, 0)
             function_name = '{}.{}'.format(self.class_name, subroutine_name)
             self.vmw.write_call(function_name, argument_counts)
         # . のケース
